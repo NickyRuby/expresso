@@ -40,7 +40,7 @@ employeesRouter.get('/', (req,res,next) => {
 
 employeesRouter.post('/', validateEmployee, (req,res,next) =>{
     db.run(
-         `INSERT INTO Employee (name,position, wage,is_currently_employee) 
+         `INSERT INTO Employee (name,position, wage,is_current_employee) 
          VALUES ("${req.name}", "${req.position}", ${req.wage}, ${req.isCurrentlyEmployee});
     `, function(err){
          if (err) {
@@ -50,6 +50,17 @@ employeesRouter.post('/', validateEmployee, (req,res,next) =>{
                  res.status(201).json({employee: data});
              });
          }
+    })
+});
+
+employeesRouter.get('/:employeeId', (req,res,next) => {
+    db.get(`SELECT * FROM Employee WHERE id=${req.params.employeeId}`, (err,data) => {
+        if (err) {
+            next(err);
+        }
+        else {
+            res.status(200).json({employee: data});
+        }
     })
 })
 
