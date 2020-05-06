@@ -2,6 +2,7 @@ const express = require('express');
 const employeesRouter = new express.Router();
 const sqlite = require('sqlite3');
 const db = new sqlite.Database(process.env.TEST_DATABASE || './database.sqlite')
+const timeSheetsRouter = require('./timesheets')
 
 const validateEmployee = (req,res,next) => {
     req.name = req.body.employee.name;
@@ -28,6 +29,9 @@ employeesRouter.param('employeeId', (req,res,next,employeeId) => {
         }
     })
 })
+
+employeesRouter.use('/:employeeId/timesheets', timeSheetsRouter);
+
 
 employeesRouter.get('/', (req,res,next) => {
     db.all(`SELECT * FROM Employee WHERE is_current_employee=1;`,(err, data) => {
@@ -62,7 +66,37 @@ employeesRouter.get('/:employeeId', (req,res,next) => {
             res.status(200).json({employee: data});
         }
     })
-})
+});
+
+employeesRouter.put('/:employeeId', validateEmployee, (req,res,next) => {
+    db.run(`UPDATE Employee SET 
+    name="${req.name}", 
+    position="${req.position}", 
+    wage=${req.wage}, 
+    is_current_employee=${req.isCurrentlyEmployee} 
+    WHERE id=${req.params.employeeId};`, function(err) {
+        if (err) {
+            next(err);
+        }
+        db.get(`SELECT * FROM Employee WHERE id=${req.params.employeeId}`, (err, data) => {
+            res.status(200).json({employee: data});
+        });
+    })
+});
+
+
+employeesRouter.delete('/:employeeId', (req,res,next) => {
+    db.run(`UPDATE Employee SET is_current_employee=0 
+    WHERE id=${req.params.employeeId};`, function(err) {
+        if (err) {
+            next(err);
+        }
+        db.get(`SELECT * FROM Employee WHERE id=${req.params.employeeId}`, (err, data) => {
+            res.status(200).json({employee: data});
+        });
+    })
+});
+
 
 
 
