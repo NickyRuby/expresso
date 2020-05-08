@@ -14,12 +14,33 @@ menuItemsRouter.get('/', (req,res,next) => {
     })
 });
 
+const validateMenuItems = (req,res,next) => {
+    req.name = req.body.menuItem.name;
+    req.description = req.body.menuItem.description;
+    req.inventory = req.body.menuItem.inventory;
+    req.price = req.body.menuItem.price;
 
+    if (!req.name || !req.description || !req.inventory || !req.price) {
+        res.status(400).send();
+    }
+    else {
+        next();
+    }
+}
 
-menuItemsRouter.post('/', (req,res,next) =>{
-    if (!req.body.menuItem.name || !req.body.menuItem.description || !req.body.menuItem.inventory || !req.body.menuItem.price) {
-        return res.status(400).send();
-    };
+menuItemsRouter.param('menuItemId', (req,res,next,menuItemId) => {
+    db.get(`SELECT * FROM Menu WHERE id=${menuItemId}`, (err,data) => {
+        if (!data) {
+           return res.status(404).send()
+        }
+        else {
+            req.menuItemId = menuItemId;
+            next();
+        }
+    })
+});
+
+menuItemsRouter.post('/', validateMenuItems, (req,res,next) =>{
     db.run(
          `INSERT INTO MenuItem (name, description, inventory, price, menu_id) 
          VALUES ("${req.body.menuItem.name}", "${req.body.menuItem.description}", ${req.body.menuItem.inventory}, ${req.body.menuItem.price}, ${req.menuId} );
@@ -34,8 +55,7 @@ menuItemsRouter.post('/', (req,res,next) =>{
     })
 });
 
-menuItemsRouter.put('/:menuItemId', (req,res,next) => {
-    console.log('im here');
+menuItemsRouter.put('/:menuItemId', validateMenuItems, (req,res,next) => {
     db.run(`UPDATE MenuItem SET 
     name="${req.body.menuItem.name}", 
     description="${req.body.menuItem.description}", 
@@ -49,6 +69,15 @@ menuItemsRouter.put('/:menuItemId', (req,res,next) => {
         db.get(`SELECT * FROM MenuItem WHERE id=${req.params.menuItemId}`, (err, data) => {
             res.status(200).json({menuItem: data});
         });
+    })
+});
+
+menuItemsRouter.delete('/:menuItemId', (req,res,next) => {
+    db.run(`DELETE FROM MenuItem WHERE id=${req.params.menuItemId};`, function(err) {
+        if (err) {
+            next(err);
+        }
+        res.status(204).send();
     })
 });
 
